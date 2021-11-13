@@ -1,10 +1,6 @@
-﻿using MySql.Data.MySqlClient;
-using ServiceStack;
-using ServiceStack.OrmLite;
+﻿using MySqlConnector;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -64,28 +60,20 @@ namespace ThreadPoolMySqlTests
         /// </summary>
         static void TestTask()
         {
-            
-            ThreadPool.SetMinThreads(200, 32767);
-            ThreadPool.SetMaxThreads(200, 32767);
             int counter = 0;
             int doneCounter = 0;
             int nbrIterations = 200;
-            Stopwatch sW = new Stopwatch();
-            sW.Start();
+            Stopwatch sW = Stopwatch.StartNew();
             for (int i = 0; i < nbrIterations; i++)
             {
-                ThreadPool.QueueUserWorkItem(delegate
-                //Task.Run(() =>
+                Task.Run(async () =>
                 {
                     int j = Interlocked.Increment(ref counter);
                     MySqlConnection conn = new MySqlConnection(connString);
-                    //lock (connString)
-                    //{
-                        conn.Open();
-                    //}
+                    await conn.OpenAsync();
                     Console.WriteLine($"{DateTime.Now:HH:mm:ss.fff}\t{Thread.CurrentThread.ManagedThreadId}\tCreated connection {j}!");
-                    Thread.Sleep(5000);
-                    conn.Close();
+                    await Task.Delay(5000);
+                    await conn.CloseAsync();
                     Interlocked.Increment(ref doneCounter);
                 });
             }
